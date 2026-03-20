@@ -15,7 +15,7 @@ from pathlib import Path
 
 #### Additional functions that can be specified by the user via intensity_props
 
-## Function to calculate median intensity values per mask 
+## Function to calculate median intensity values per mask
 def intensity_median(mask, intensity):
     return np.median(intensity[mask])
 
@@ -222,7 +222,7 @@ def ExtractSingleCells(masks,image,channel_names,output, mask_props=None, intens
     #Contrast against the number of markers in the image
     if len(channel_names_loaded_list) != n_channels(image):
         raise Exception("The number of channels in %s doesn't match the image"%channel_names)
-    
+
     #Check for unique marker names -- create new list to store new names
     channel_names_loaded_checked = []
     for idx,val in enumerate(channel_names_loaded_list):
@@ -240,7 +240,11 @@ def ExtractSingleCells(masks,image,channel_names,output, mask_props=None, intens
     for m in masks:
         m_full_name = os.path.basename(m)
         m_name = m_full_name.split('.')[0]
-        masks_loaded.update({str(m_name):skimage.io.imread(m,plugin='tifffile')})
+        # Load mask and ensure it's an integer type for skimage.measure
+        mask_data = skimage.io.imread(m, plugin='tifffile')
+        if not np.issubdtype(mask_data.dtype, np.integer):
+            mask_data = mask_data.astype(np.int32)
+        masks_loaded.update({str(m_name): mask_data})
 
     scdata_z = MaskZstack(masks_loaded,image,channel_names_loaded_checked, mask_props=mask_props, intensity_props=intensity_props)
     #Write the singe cell data to a csv file using the image name
