@@ -31,6 +31,40 @@ def gini_index(mask, intensity):
     cumx = np.cumsum(sorted_x, dtype=float)
     return (n + 1 - 2 * np.sum(cumx) / cumx[-1]) / n
 
+import warnings
+from skimage.feature import graycomatrix, graycoprops
+from skimage.filters import gabor
+
+def glcm_contrast(mask, intensity):
+    img = intensity.copy()
+    img[~mask] = 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if img.max() > 0:
+            img = (img / img.max() * 255).astype(np.uint8)
+        else:
+            img = img.astype(np.uint8)
+    glcm = graycomatrix(img, distances=[1], angles=[0], levels=256, symmetric=True, normed=True)
+    return graycoprops(glcm, 'contrast')[0, 0]
+
+def glcm_entropy(mask, intensity):
+    img = intensity.copy()
+    img[~mask] = 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if img.max() > 0:
+            img = (img / img.max() * 255).astype(np.uint8)
+        else:
+            img = img.astype(np.uint8)
+    glcm = graycomatrix(img, distances=[1], angles=[0], levels=256, symmetric=True, normed=True)
+    p = glcm[:, :, 0, 0]
+    p = p[p > 0]
+    return float(-np.sum(p * np.log2(p))) if len(p) > 0 else 0.0
+
+def gabor_filter_mean(mask, intensity):
+    filt_real, filt_imag = gabor(intensity, frequency=0.6)
+    return float(np.mean(filt_real[mask]))
+
 def MaskChannel(mask_loaded, image_loaded_z, intensity_props=["intensity_mean"]):
     """Function for quantifying a single channel image
 
